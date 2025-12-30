@@ -8,7 +8,6 @@ import java.time.format.DateTimeFormatter
 import java.time.ZoneId
 
 class CalendarService {
-
     @Transactional
     def importCalendar(def fileData) {
         String file = new String(fileData, "UTF-8")
@@ -42,7 +41,7 @@ class CalendarService {
                     )
                     log.info("Imported calendar entry: ${entry} for asset: ${assetInstance.name}")
                     try {
-                        def calendarInstance = new jten.mil.Calendar(entry: entry, priority: priority, dueDate: dueDate1,
+                        def calendarInstance = new Calendar(entry: entry, priority: priority, dueDate: dueDate1,
                                 asset: assetInstance)
                         calendarInstance.save(flush: true)
                     }

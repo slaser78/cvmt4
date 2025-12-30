@@ -5,7 +5,6 @@ import grails.gorm.transactions.Transactional
 import groovy.xml.XmlSlurper
 import groovy.xml.slurpersupport.GPathResult
 
-
 @Transactional
 class AssetStigVulnStatusService {
     def asvsFilterService
@@ -27,21 +26,16 @@ class AssetStigVulnStatusService {
     static final String TRUE_FLAG = "true"
     def getAssetStigVulnStatusEntries(String statusAssetId) {
         def parsedAssetId = Long.valueOf(statusAssetId)
-
         def stigAssetRequested = StigAsset.findWhere(id: parsedAssetId)
         def stigVulnerabilitiesList = StigVulnerability.findAllWhere(stig: stigAssetRequested.stig)
         def securityStatusList = AssetStigVulnStatus.findAllWhere(stigAsset: stigAssetRequested)
-
         def combinedStigVulnList = []
         securityStatusList.each { combinedStigVulnList += it.stigVulnerability }
-
         combinedStigVulnList.intersect(stigVulnerabilitiesList).each {
             combinedStigVulnList.remove(it)
             stigVulnerabilitiesList.remove(it)
         }
-
         manageSecurityStatusEntries(combinedStigVulnList, stigVulnerabilitiesList, stigAssetRequested)
-
         return fetchTotalSecurityStatus(stigAssetRequested)
     }
 
@@ -242,7 +236,7 @@ class AssetStigVulnStatusService {
         def ipAddress = checklist.ASSET.HOST_IP.text()
         AssetStigVulnStatus assetStigVulnStatus
         if (ipAddress == asset.ipAddress) {
-            String stigId = stigData.find { it.SID_NAME.text() == "stigid" }?.SID_DATA.text() as String
+                String stigId = stigData.find { it.SID_NAME.text() == "stigid" }?.SID_DATA.text() as String
             if (stigId) {
                 if (stigId == stig.tenable) {
                     vulns.each { vuln ->
