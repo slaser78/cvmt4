@@ -67,7 +67,7 @@ dependencies {
     testImplementation "org.testcontainers:testcontainers"
 }
 
-compileJava.options.release = 17
+compileJava.options.release = 21
 
 tasks.withType(Test).configureEach {
     useJUnitPlatform()

@@ -6,8 +6,7 @@ import static org.springframework.http.HttpStatus.*
 
 class AssetRelationshipController {
     def index() {
-        List <AssetRelationship> assetRelationships = AssetRelationship.list()
-        respond assetRelationships
+        respond AssetRelationship.list()
     }
 
     def list() {
@@ -36,10 +35,6 @@ class AssetRelationshipController {
 
     @Transactional
     def save(AssetRelationship assetRelationship) {
-        if (assetRelationship == null) {
-            notFound()
-            return
-        }
         try {
             assetRelationship.save()
         } catch (ValidationException e) {
