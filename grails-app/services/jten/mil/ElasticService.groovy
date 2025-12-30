@@ -22,6 +22,7 @@ class ElasticService {
     def elasticPatchUpload() {
         List<VulnerabilityDetail> vulnerabilityDetails = VulnerabilityDetail.findAll()
         if (vulnerabilityDetails) {
+            def sslContext = lookupService.getSslContext()
             vulnerabilityDetails.each { VulnerabilityDetail vulnerabilityDetail ->
                 Map timestamp = ["@timestamp": new Date().format("yyyy-MM-dd")]
                 Map vulnerabilityName = ["Vulnerability": vulnerabilityDetail.vulnerability.name]
@@ -79,10 +80,8 @@ class ElasticService {
 
                 String uri = grailsApplication.config.getProperty('elasticUrl', String.class) + "/cvmt-patch-datastream/_doc"
 
-                def sslContext1 = lookupService.getSslContext()
-
                 def tlsStrategy = ClientTlsStrategyBuilder.create()
-                        .setSslContext(sslContext1)
+                        .setSslContext(sslContext)
                         .buildClassic()
 
                 PoolingHttpClientConnectionManager connectionManager =
@@ -93,16 +92,14 @@ class ElasticService {
                 CloseableHttpClient httpClient = HttpClients.custom()
                         .setConnectionManager(connectionManager)
                         .build()
-                String json = null
                 try {
                     HttpPost httpPost = new HttpPost(uri)
                     httpPost.addHeader("Content-Type", "application/json")
                     httpPost.addHeader("Authorization", "ApiKey " + grailsApplication.config.getProperty('elasticApiKey', String.class))
                     StringEntity entity = new StringEntity(body)
                     httpPost.setEntity(entity)
-                    HttpClientContext clientContext = HttpClientContext.create()
                     httpClient.execute(httpPost, clientContext, response -> {
-                        json = EntityUtils.toString(response.getEntity())
+                        entities = EntityUtils.toString(response.getEntity())
                     })
                 } catch (e) {
                     log.error(e.getMessage())
@@ -119,7 +116,7 @@ class ElasticService {
     def elasticStigUpload() {
         List<AssetStigVulnStatus> assetStigVulnStatuses = AssetStigVulnStatus.findAllWhere(status: "Open")
         if (assetStigVulnStatuses) {
-            SSLContext sslContext = lookupService.getSslContext()
+            def sslContext = lookupService.getSslContext()
             assetStigVulnStatuses.each { AssetStigVulnStatus assetStigVulnStatus ->
                 Map timestamp = ["@timestamp": new Date().format("yyyy-MM-dd")]
                 Map vulnerability = ["Vulnerability": assetStigVulnStatus.stigVulnerability.ruleTitle]
@@ -163,20 +160,26 @@ class ElasticService {
                 String body = JsonOutput.toJson(timestamp + vulnerability + number + firstSeen + severity + type +
                         asset + ipAddress + completeDate + aor + poc + milestones + milestoneChanges + resourcesRequired + crit + por)
                 String uri = grailsApplication.config.getProperty('elasticUrl', String.class) + "/cvmt-stig-datastream/_doc"
-                Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory> create()
-                        .register("https", new SSLConnectionSocketFactory(sslContext))
+
+
+                def tlsStrategy = ClientTlsStrategyBuilder.create()
+                        .setSslContext(sslContext)
+                        .buildClassic()
+
+                PoolingHttpClientConnectionManager connectionManager =
+                        PoolingHttpClientConnectionManagerBuilder.create()
+                                .setTlsSocketStrategy(tlsStrategy)
+                                .build()
+
+                CloseableHttpClient httpClient = HttpClients.custom()
+                        .setConnectionManager(connectionManager)
                         .build()
-                CloseableHttpClient httpClient = HttpClientBuilder.create()
-                        .setConnectionManager(new PoolingHttpClientConnectionManager(registry))
-                        .build()
-                String json = null
                 try {
                     HttpPost httpPost = new HttpPost(uri)
                     httpPost.addHeader("Content-Type", "application/json")
                     httpPost.addHeader("Authorization", "ApiKey " + grailsApplication.config.getProperty('elasticApiKey', String.class))
                     StringEntity entity = new StringEntity(body)
                     httpPost.setEntity(entity)
-                    HttpClientContext clientContext = HttpClientContext.create()
                     httpClient.execute(httpPost, clientContext, response -> {
                         json = EntityUtils.toString(response.getEntity())
                     })
@@ -195,7 +198,7 @@ class ElasticService {
     def elasticAssetUpload () {
         List<Asset> assets = Asset.list()
         if (assets) {
-            SSLContext sslContext = lookupService.getSslContext()
+            def sslContext = lookupService.getSslContext()
             for (asset in assets) {
                 if (asset.ipAddress != "None") {
                     Map timestamp = ["@timestamp": new Date().format("yyyy-MM-dd")]
@@ -227,20 +230,24 @@ class ElasticService {
                     String body = JsonOutput.toJson(timestamp + asset1 + ipAddress + score + operatingSystem +
                             poc + aor + credentialedScan + lastScan + description + subnet)
                     String uri = grailsApplication.config.getProperty('elasticUrl', String.class) + "/cvmt-asset-datastream/_doc"
-                    Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory> create()
-                            .register("https", new SSLConnectionSocketFactory(sslContext))
+                    def tlsStrategy = ClientTlsStrategyBuilder.create()
+                            .setSslContext(sslContext)
+                            .buildClassic()
+
+                    PoolingHttpClientConnectionManager connectionManager =
+                            PoolingHttpClientConnectionManagerBuilder.create()
+                                    .setTlsSocketStrategy(tlsStrategy)
+                                    .build()
+
+                    CloseableHttpClient httpClient = HttpClients.custom()
+                            .setConnectionManager(connectionManager)
                             .build()
-                    CloseableHttpClient httpClient = HttpClientBuilder.create()
-                            .setConnectionManager(new PoolingHttpClientConnectionManager(registry))
-                            .build()
-                    String json = null
                     try {
                         HttpPost httpPost = new HttpPost(uri)
                         httpPost.addHeader("Content-Type", "application/json")
                         httpPost.addHeader("Authorization", "ApiKey " + grailsApplication.config.getProperty('elasticApiKey', String.class))
                         StringEntity entity = new StringEntity(body)
                         httpPost.setEntity(entity)
-                        HttpClientContext clientContext = HttpClientContext.create()
                         httpClient.execute(httpPost, clientContext, response -> {
                             json = EntityUtils.toString(response.getEntity())
                         })
@@ -262,7 +269,7 @@ class ElasticService {
         String uri = grailsApplication.config.getProperty('elasticUrl', String.class) + "/cvmt-stig-summary-datastream/_doc"
         for (asset in assets) {
             if (asset.deviceType) {
-                SSLContext sslContext = lookupService.getSslContext()
+                def sslContext = lookupService.getSslContext()
                 Map assetOS = ["Asset Operating System": asset.deviceType]
                 Map timestamp = ["@timestamp": new Date().format("yyyy-MM-dd")]
                 List<AssetStigVulnStatus> assetStigVulnStatuses = AssetStigVulnStatus.findAllWhere(asset: asset)
@@ -281,20 +288,25 @@ class ElasticService {
                     Map fail = ["Fail": openCount.toString()]
                     Map compliance = ["Compliance": (pass / assetStigVulnStatusCount).toString()]
                     String body = JsonOutput.toJson(timestamp + assetOS + pass1 + fail + compliance + assetName + assetIpAddress)
-                    Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory> create()
-                            .register("https", new SSLConnectionSocketFactory(sslContext))
+                    def tlsStrategy = ClientTlsStrategyBuilder.create()
+                            .setSslContext(sslContext)
+                            .buildClassic()
+
+                    PoolingHttpClientConnectionManager connectionManager =
+                            PoolingHttpClientConnectionManagerBuilder.create()
+                                    .setTlsSocketStrategy(tlsStrategy)
+                                    .build()
+
+                    CloseableHttpClient httpClient = HttpClients.custom()
+                            .setConnectionManager(connectionManager)
                             .build()
-                    CloseableHttpClient httpClient = HttpClientBuilder.create()
-                            .setConnectionManager(new PoolingHttpClientConnectionManager(registry))
-                            .build()
-                    String json = null
+
                     try {
                         HttpPost httpPost = new HttpPost(uri)
                         httpPost.addHeader("Content-Type", "application/json")
                         httpPost.addHeader("Authorization", "ApiKey " + grailsApplication.config.getProperty('elasticApiKey', String.class))
                         StringEntity entity = new StringEntity(body)
                         httpPost.setEntity(entity)
-                        HttpClientContext clientContext = HttpClientContext.create()
                         httpClient.execute(httpPost, clientContext, response -> {
                             json = EntityUtils.toString(response.getEntity())
                         })
