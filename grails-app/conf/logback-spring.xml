@@ -1,0 +1,18 @@
+<configuration>
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="filters.HibernateFilter"/>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--   daily rollover   -->
+            <fileNamePattern>/home/scott/.grails/logs/cvmt_log-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!--   keep 7 days' worth of history capped at 3GB total size   -->
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>"%d %level %thread %mdc %logger - %m%n"</pattern>
+        </encoder>
+    </appender>
+    <root level="WARN">
+        <appender-ref ref="FILE"/>
+    </root>
+</configuration>

@@ -1,0 +1,83 @@
+info:
+  app:
+    name: '@info.app.name@'
+    version: '@info.app.version@'
+    grailsVersion: '@info.app.grailsVersion@'
+grails:
+  codegen:
+    defaultPackage: jten.mil
+  profile: rest-api
+  views:
+    default:
+      codec: html
+  mime:
+    disable:
+      accept:
+        header:
+          userAgents:
+          - Gecko
+          - WebKit
+          - Presto
+          - Trident
+    types:
+      json:
+      - application/json
+      - text/json
+      hal:
+      - application/hal+json
+      - application/hal+xml
+      xml:
+      - text/xml
+      - application/xml
+      atom: application/atom+xml
+      css: text/css
+      csv: text/csv
+      js: text/javascript
+      rss: application/rss+xml
+      text: text/plain
+      all: '*/*'
+  urlmapping:
+    cache:
+      maxsize: 1000
+  controllers:
+      defaultScope: singleton
+      upload:
+        maxFileSize: 1073741824
+        maxRequestSize: 1073741824
+  converters:
+      encoding: UTF-8
+  config:
+      locations:
+        - file:///home/scott/.grails/cvmtConfig.yml
+  databinding:
+      dateFormats:
+        - "MM/dd/yyyy"
+  cors:
+      enabled: true
+      allowedOrigins: [ '*' ]
+dataSource:
+  driverClassName: org.postgresql.Driver
+  username: postgres
+  password: '1q2w3e4r!Q@W#E$R'
+  pooled: true
+  jmxExport: true
+environments:
+  development:
+    dataSource:
+      dbCreate: create-drop
+      url: jdbc:postgresql://localhost:5432/devDb?tcpKeepAlive=true
+  test:
+    dataSource:
+      dbCreate: update
+      url: jdbc:postgresql://localhost:5432/testDb?tcpKeepAlive=true
+  production:
+    dataSource:
+      dbCreate: none
+      url: jdbc:postgresql://localhost:5432/postgres?tcpKeepAlive=true
+hibernate:
+  cache:
+    queries: false
+    use_second_level_cache: false
+    use_query_cache: false
+  dialect: 'org.hibernate.dialect.PostgreSQL10Dialect'
+quartz.autoStartup: true
