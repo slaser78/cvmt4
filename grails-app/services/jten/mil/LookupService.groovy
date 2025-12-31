@@ -5,21 +5,15 @@ import grails.gorm.transactions.Transactional
 import groovy.json.JsonSlurper
 import org.apache.commons.validator.routines.InetAddressValidator
 import org.apache.hc.client5.http.classic.methods.HttpGet
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
-import org.apache.hc.client5.http.impl.classic.HttpClientBuilder
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager
-import org.apache.hc.client5.http.protocol.HttpClientContext
-import org.apache.hc.client5.http.socket.ConnectionSocketFactory
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory
-import org.apache.hc.core5.http.config.Registry
-import org.apache.hc.core5.http.config.RegistryBuilder
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder
+import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder
 import org.apache.hc.core5.http.io.entity.EntityUtils
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLEngine
-import javax.net.ssl.TrustManager
-import javax.net.ssl.X509ExtendedTrustManager
-import java.security.SecureRandom
-import java.security.cert.CertificateException
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
+import org.apache.hc.client5.http.impl.classic.HttpClients
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier
+import org.apache.hc.core5.ssl.SSLContexts
+import org.apache.hc.core5.ssl.TrustStrategy
 import java.security.cert.X509Certificate
 
 class LookupService {
@@ -30,23 +24,27 @@ class LookupService {
     @Transactional
     def getName() {
         List<Asset> assetList = Asset.list()
-        SSLContext sslContext = getSslContext()
+        def sslContext = SSLContexts.createSystemDefault()
         for (asset in assetList) {
             if (asset.ipAddress != 'None') {
                 String uri = grailsApplication.config.getProperty('infobloxUrl', String.class) + "ipv4address?ip_address=${asset.ipAddress}"
                 String auth = "Basic " + grailsApplication.config.getProperty('infobloxEncodedNamePassword', String.class)
-                String json = ""
-                Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory> create()
-                        .register("https", new SSLConnectionSocketFactory(sslContext))
-                        .build()
-                CloseableHttpClient httpClient = HttpClientBuilder.create()
-                        .setConnectionManager(new PoolingHttpClientConnectionManager(registry))
+                def tlsStrategy = ClientTlsStrategyBuilder.create()
+                        .setSslContext(sslContext)
+                        .buildClassic()
+
+                PoolingHttpClientConnectionManager connectionManager =
+                        PoolingHttpClientConnectionManagerBuilder.create()
+                                .setTlsSocketStrategy(tlsStrategy)
+                                .build()
+
+                CloseableHttpClient httpClient = HttpClients.custom()
+                        .setConnectionManager(connectionManager)
                         .build()
                 try {
                     HttpGet httpGet = new HttpGet(uri)
                     httpGet.addHeader("Authorization", auth)
                     httpGet.addHeader("Content-Type", "application/json")
-                    HttpClientContext clientContext = HttpClientContext.create()
                     httpClient.execute(httpGet, clientContext, response -> {
                         json = EntityUtils.toString(response.getEntity())
                     })
@@ -182,18 +180,24 @@ class LookupService {
             String uri = grailsApplication.config.getProperty('infobloxUrl', String.class) + "ipv4address?ip_address=${ipAddress}"
             String auth = "Basic " + grailsApplication.config.getProperty('infobloxEncodedNamePassword', String.class)
             String json = ''
-            SSLContext sslContext = getSslContext()
-            Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory> create()
-                    .register("https", new SSLConnectionSocketFactory(sslContext))
-                    .build()
-            CloseableHttpClient httpClient = HttpClientBuilder.create()
-                    .setConnectionManager(new PoolingHttpClientConnectionManager(registry))
+            def sslContext1 = SSLContexts.createSystemDefault()
+
+            def tlsStrategy = ClientTlsStrategyBuilder.create()
+                    .setSslContext(sslContext1)
+                    .buildClassic()
+
+            PoolingHttpClientConnectionManager connectionManager =
+                    PoolingHttpClientConnectionManagerBuilder.create()
+                            .setTlsSocketStrategy(tlsStrategy)
+                            .build()
+
+            CloseableHttpClient httpClient = HttpClients.custom()
+                    .setConnectionManager(connectionManager)
                     .build()
             try {
                 HttpGet httpGet = new HttpGet(uri)
                 httpGet.addHeader("Authorization", auth)
                 httpGet.addHeader("Content-Type", "application/json")
-                HttpClientContext clientContext = HttpClientContext.create()
                 httpClient.execute(httpGet, clientContext, response -> {
                     json = EntityUtils.toString(response.getEntity())
                 })
@@ -291,23 +295,28 @@ class LookupService {
     @Transactional
     def getName2() {
         List<Asset> assetList = Asset.list()
-        SSLContext sslContext = getSslContext()
+        def sslContext1 = SSLContexts.createSystemDefault()
         for (asset in assetList) {
             if (asset.name.startsWith("temp_")) {
                 String uri = grailsApplication.config.getProperty('infobloxUrl', String.class) + "ipv4address?ip_address=${asset.ipAddress}"
                 String auth = "Basic " + grailsApplication.config.getProperty('infobloxEncodedNamePassword', String.class)
                 String json = ""
-                Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory> create()
-                        .register("https", new SSLConnectionSocketFactory(sslContext))
-                        .build()
-                CloseableHttpClient httpClient = HttpClientBuilder.create()
-                        .setConnectionManager(new PoolingHttpClientConnectionManager(registry))
+                def tlsStrategy = ClientTlsStrategyBuilder.create()
+                        .setSslContext(sslContext1)
+                        .buildClassic()
+
+                PoolingHttpClientConnectionManager connectionManager =
+                        PoolingHttpClientConnectionManagerBuilder.create()
+                                .setTlsSocketStrategy(tlsStrategy)
+                                .build()
+
+                CloseableHttpClient httpClient = HttpClients.custom()
+                        .setConnectionManager(connectionManager)
                         .build()
                 try {
                     HttpGet httpGet = new HttpGet(uri)
                     httpGet.addHeader("Authorization", auth)
                     httpGet.addHeader("Content-Type", "application/json")
-                    HttpClientContext clientContext = HttpClientContext.create()
                     httpClient.execute(httpGet, clientContext, response -> {
                         json = EntityUtils.toString(response.getEntity())
                     })
@@ -411,18 +420,23 @@ class LookupService {
         String uri = grailsApplication.config.getProperty('infobloxUrl', String.class) + "ipv4address?ip_address=${asset.ipAddress}"
         String auth = "Basic " + grailsApplication.config.getProperty('infobloxEncodedNamePassword', String.class)
         String json = ''
-        SSLContext sslContext = getSslContext()
-        Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory> create()
-                .register("https", new SSLConnectionSocketFactory(sslContext))
-                .build()
-        CloseableHttpClient httpClient = HttpClientBuilder.create()
-                .setConnectionManager(new PoolingHttpClientConnectionManager(registry))
+        def sslContext1 = SSLContexts.createSystemDefault()
+        def tlsStrategy = ClientTlsStrategyBuilder.create()
+                .setSslContext(sslContext1)
+                .buildClassic()
+
+        PoolingHttpClientConnectionManager connectionManager =
+                PoolingHttpClientConnectionManagerBuilder.create()
+                        .setTlsSocketStrategy(tlsStrategy)
+                        .build()
+
+        CloseableHttpClient httpClient = HttpClients.custom()
+                .setConnectionManager(connectionManager)
                 .build()
         try {
             HttpGet httpGet = new HttpGet(uri)
             httpGet.addHeader("Authorization", auth)
             httpGet.addHeader("Content-Type", "application/json")
-            HttpClientContext clientContext = HttpClientContext.create()
             httpClient.execute(httpGet, clientContext, response -> {
                 json = EntityUtils.toString(response.getEntity())
             })
@@ -499,49 +513,19 @@ class LookupService {
         return total
     }
 
-    def getSslContext() {
-        TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509ExtendedTrustManager() {
+    CloseableHttpClient httpClient() {
 
-                    @Override
-                    void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
+        def trustAllStrategy = { X509Certificate[] chain, String authType ->
+            true
+        } as TrustStrategy
 
-                    }
+        def sslContext = SSLContexts.custom()
+                .loadTrustMaterial(null, trustAllStrategy)
+                .build()
 
-                    @Override
-                    void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
-
-                    }
-
-                    @Override
-                    void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
-
-                    }
-
-                    @Override
-                    void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
-
-                    }
-
-                    @Override
-                    void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-
-                    }
-
-                    @Override
-                    void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-
-                    }
-
-                    @Override
-                    X509Certificate[] getAcceptedIssuers() {
-                        //return null
-                        return new X509Certificate[0]
-                    }
-                }
-        }
-        SSLContext sslContext = SSLContext.getInstance("TLS")
-        sslContext.init(null, trustAllCerts, new SecureRandom())
-        return sslContext
+        HttpClients.custom()
+                .setSSLContext(sslContext)
+                .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                .build()
     }
 }

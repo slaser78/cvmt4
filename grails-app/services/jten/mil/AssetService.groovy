@@ -15,6 +15,8 @@ import org.apache.hc.core5.http.io.entity.EntityUtils
 import org.apache.hc.core5.http.io.entity.StringEntity
 import javax.net.ssl.SSLContext
 import grails.core.GrailsApplication
+import org.apache.hc.core5.ssl.TrustStrategy
+import java.security.cert.X509Certificate
 
 class AssetService {
     def lookupService
@@ -74,10 +76,10 @@ class AssetService {
         String cookie = "${map.get("cookie")}"
         if (cookie != "null") {
             ArrayList<String> assetList1 = []
-            SSLContext sslContext = lookupService.getSslContext()
             //create a list of asset IP addresses
             def assetList = Asset.findAll()
             if (assetList) {
+                def sslContext = SSLContexts.createSystemDefault()
                 for (asset in assetList) {
                     if (asset.ipAddress != 'None') {
                         assetList1 += asset.ipAddress
@@ -112,10 +114,9 @@ class AssetService {
                         //retrieve a list of assets (name/ipAddress) for that asset id
                         String query = "?fields=repositories,viewableIPs"
                         String uri = grailsApplication.config.getProperty('acasUrl', String.class) + '/rest/asset/' + asset + query
-                        def sslContext1 = SSLContexts.createSystemDefault()
 
                         def tlsStrategy = ClientTlsStrategyBuilder.create()
-                                .setSslContext(sslContext1)
+                                .setSslContext(sslContext)
                                 .buildClassic()
 
                         PoolingHttpClientConnectionManager connectionManager =
@@ -123,9 +124,7 @@ class AssetService {
                                         .setTlsSocketStrategy(tlsStrategy)
                                         .build()
 
-                        CloseableHttpClient httpClient = HttpClients.custom()
-                                .setConnectionManager(connectionManager)
-                                .build()
+                        def httpClient = lookupService.httpClient()
                         try {
                             HttpGet httpGet = new HttpGet(uri)
                             httpGet.addHeader("Cookie", cookie)
@@ -299,7 +298,7 @@ class AssetService {
         String token = "${map.get("token")}"
         String cookie = "${map.get("cookie")}"
         if (cookie != "null") {
-            SSLContext sslContext = lookupService.getSslContext()
+            def sslContext = SSLContexts.createSystemDefault()
             String json = ""
             def query = '{' +
                     '"query": {' +
@@ -319,10 +318,9 @@ class AssetService {
                     '"type": "vuln"' +
                     '}'
             String uri = grailsApplication.config.getProperty('acasUrl', String.class) + '/rest/analysis'
-            def sslContext1 = SSLContexts.createSystemDefault()
 
             def tlsStrategy = ClientTlsStrategyBuilder.create()
-                    .setSslContext(sslContext1)
+                    .setSslContext(sslContext)
                     .buildClassic()
 
             PoolingHttpClientConnectionManager connectionManager =
@@ -330,9 +328,8 @@ class AssetService {
                             .setTlsSocketStrategy(tlsStrategy)
                             .build()
 
-            CloseableHttpClient httpClient = HttpClients.custom()
-                    .setConnectionManager(connectionManager)
-                    .build()
+            def httpClient = lookupService.httpClient()
+
             try {
                 HttpPost httpPost = new HttpPost(uri)
                 httpPost.addHeader("Cookie", cookie)
@@ -340,7 +337,6 @@ class AssetService {
                 httpPost.addHeader("X-SecurityCenter", token)
                 StringEntity entity = new StringEntity(query)
                 httpPost.setEntity(entity)
-
                 HttpClientContext clientContext = HttpClientContext.create()
                 httpClient.execute(httpPost, clientContext, response -> {
                     json = EntityUtils.toString(response.getEntity())
@@ -408,10 +404,18 @@ class AssetService {
         String token = "${map.get("token")}"
         String cookie = "${map.get("cookie")}"
         if (cookie != "null") {
-            List<Asset> assets = Asset.list()
+            def sslContext = SSLContexts.createSystemDefault()
             for (asset in assets) {
                 if (asset.ipAddress != 'None') {
-                    SSLContext sslContext = lookupService.getSslContext()
+                    def tlsStrategy = ClientTlsStrategyBuilder.create()
+                            .setSslContext(sslContext)
+                            .buildClassic()
+
+                    PoolingHttpClientConnectionManager connectionManager =
+                            PoolingHttpClientConnectionManagerBuilder.create()
+                                    .setTlsSocketStrategy(tlsStrategy)
+                                    .build()
+                    def httpClient = lookupService.httpClient()
                     String json = ""
                     def query = '{' +
                             '"query": {' +
@@ -430,20 +434,7 @@ class AssetService {
                             '"startOffset":0, ' +
                             '"endOffset":5}'
                     String uri = grailsApplication.config.getProperty('acasUrl', String.class) + '/rest/analysis'
-                    def sslContext1 = SSLContexts.createSystemDefault()
 
-                    def tlsStrategy = ClientTlsStrategyBuilder.create()
-                            .setSslContext(sslContext1)
-                            .buildClassic()
-
-                    PoolingHttpClientConnectionManager connectionManager =
-                            PoolingHttpClientConnectionManagerBuilder.create()
-                                    .setTlsSocketStrategy(tlsStrategy)
-                                    .build()
-
-                    CloseableHttpClient httpClient = HttpClients.custom()
-                            .setConnectionManager(connectionManager)
-                            .build()
                     try {
                         HttpPost httpPost = new HttpPost(uri)
                         httpPost.addHeader("Cookie", cookie)
@@ -505,7 +496,7 @@ class AssetService {
         String token = "${map.get("token")}"
         String cookie = "${map.get("cookie")}"
         if (cookie != "null") {
-            SSLContext sslContext = lookupService.getSslContext()
+            def sslContext = SSlContexts.createSystemDefault()
             //create a list of asset IP addresses
             def assetList = Asset.findAll()
             def assetList1 = []
@@ -530,10 +521,9 @@ class AssetService {
                     //retrieve a list of assets (name/ipAddress) for that asset id
                     String query = "?fields=repositories,viewableIPs"
                     String uri = grailsApplication.config.getProperty('acasUrl', String.class) + '/rest/asset/' + asset + query
-                    def sslContext1 = SSLContexts.createSystemDefault()
 
                     def tlsStrategy = ClientTlsStrategyBuilder.create()
-                            .setSslContext(sslContext1)
+                            .setSslContext(sslContext)
                             .buildClassic()
 
                     PoolingHttpClientConnectionManager connectionManager =
@@ -541,9 +531,7 @@ class AssetService {
                                     .setTlsSocketStrategy(tlsStrategy)
                                     .build()
 
-                    CloseableHttpClient httpClient = HttpClients.custom()
-                            .setConnectionManager(connectionManager)
-                            .build()
+                    def httpClient = lookupService.httpClient()
                     try {
                         HttpGet httpGet = new HttpGet(uri)
                         httpGet.addHeader("Cookie", cookie)
