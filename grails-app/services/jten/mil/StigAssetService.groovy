@@ -17,7 +17,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 @Transactional
-class StigAsset2Service {
+class StigAssetService {
     GrailsApplication grailsApplication
     def lookupService
 

@@ -20,7 +20,7 @@ import groovy.xml.XmlSlurper
 import java.util.zip.ZipFile
 
 @Transactional
-class Stig2Service {
+class StigService {
     GrailsApplication grailsApplication
     def lookupService
 
